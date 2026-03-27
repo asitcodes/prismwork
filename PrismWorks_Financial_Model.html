@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrismWorks DEI Financial Model</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, 'Segoe UI', sans-serif; background: #f8f7f4; color: #1a1a18; min-height: 100vh; }
+  
+  .header { background: linear-gradient(135deg, #1a0533 0%, #4B1565 50%, #7c3aed 100%); color: #fff; padding: 32px 40px; }
+  .header-top { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
+  .rainbow-bar { height: 6px; width: 100%; background: linear-gradient(90deg, #e11d48, #ea580c, #ca8a04, #16a34a, #2563eb, #7c3aed); border-radius: 3px; margin-top: 20px; }
+  .header h1 { font-size: 24px; font-weight: 700; }
+  .header p { font-size: 13px; opacity: 0.75; margin-top: 4px; }
+  .badge { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 20px; padding: 4px 12px; font-size: 11px; font-weight: 600; letter-spacing: 0.05em; }
+  
+  .main { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  
+  .section-title { font-size: 11px; font-weight: 600; color: #6b6b68; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+  
+  /* Controls */
+  .controls-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 28px; }
+  .control-card { background: #fff; border: 0.5px solid #e0ded6; border-radius: 12px; padding: 16px; }
+  .control-label { font-size: 11px; color: #6b6b68; margin-bottom: 8px; display: flex; justify-content: space-between; }
+  .control-label span { font-weight: 600; color: #1a1a18; font-size: 14px; }
+  input[type=range] { width: 100%; accent-color: #7c3aed; cursor: pointer; }
+  .control-hint { font-size: 10px; color: #9c9a92; margin-top: 6px; }
+  
+  /* KPI Cards */
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .kpi-card { background: #fff; border: 0.5px solid #e0ded6; border-radius: 12px; padding: 16px 18px; }
+  .kpi-label { font-size: 11px; color: #6b6b68; margin-bottom: 6px; }
+  .kpi-value { font-size: 26px; font-weight: 700; line-height: 1; }
+  .kpi-sub { font-size: 11px; color: #9c9a92; margin-top: 4px; }
+  .kpi-card.danger .kpi-value { color: #dc2626; }
+  .kpi-card.success .kpi-value { color: #16a34a; }
+  .kpi-card.warning .kpi-value { color: #ca8a04; }
+  .kpi-card.purple .kpi-value { color: #7c3aed; }
+  
+  /* Charts */
+  .charts-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 16px; margin-bottom: 28px; }
+  .chart-card { background: #fff; border: 0.5px solid #e0ded6; border-radius: 12px; padding: 20px; }
+  .chart-title { font-size: 13px; font-weight: 600; color: #1a1a18; margin-bottom: 4px; }
+  .chart-sub { font-size: 11px; color: #9c9a92; margin-bottom: 16px; }
+  
+  /* Breakdown table */
+  .breakdown-card { background: #fff; border: 0.5px solid #e0ded6; border-radius: 12px; padding: 20px; margin-bottom: 28px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-size: 11px; font-weight: 600; color: #6b6b68; text-align: left; padding: 8px 12px; border-bottom: 1px solid #e0ded6; }
+  td { font-size: 13px; padding: 10px 12px; border-bottom: 0.5px solid #f0eed8; color: #1a1a18; }
+  tr:last-child td { border-bottom: none; }
+  .cost-val { color: #dc2626; font-weight: 600; }
+  .save-val { color: #16a34a; font-weight: 600; }
+  .total-row td { font-weight: 700; font-size: 14px; background: #faf9f6; }
+  .inv-row td { background: #f5f0fe; color: #4c1d95; font-weight: 600; }
+  .roi-row td { background: #f0fdf4; color: #14532d; font-weight: 700; font-size: 15px; }
+  
+  /* Attrition bands */
+  .band-card { background: #fff; border: 0.5px solid #e0ded6; border-radius: 12px; padding: 20px; margin-bottom: 28px; }
+  .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .scenario { border-radius: 10px; padding: 16px; text-align: center; }
+  .scenario.bad { background: #fef2f2; border: 1px solid #fecaca; }
+  .scenario.neutral { background: #fffbeb; border: 1px solid #fde68a; }
+  .scenario.good { background: #f0fdf4; border: 1px solid #bbf7d0; }
+  .scenario h3 { font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+  .scenario .big { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .scenario p { font-size: 11px; line-height: 1.4; }
+  .bad h3 { color: #991b1b; } .bad .big { color: #dc2626; } .bad p { color: #7f1d1d; }
+  .neutral h3 { color: #92400e; } .neutral .big { color: #ca8a04; } .neutral p { color: #78350f; }
+  .good h3 { color: #14532d; } .good .big { color: #16a34a; } .good p { color: #166534; }
+  
+  .footer { text-align: center; font-size: 11px; color: #9c9a92; padding: 16px; border-top: 0.5px solid #e0ded6; margin-top: 16px; }
+  .rainbow-footer { height: 4px; background: linear-gradient(90deg, #e11d48, #ea580c, #ca8a04, #16a34a, #2563eb, #7c3aed); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <span class="badge">TEAM TRIUMPH</span>
+    <span class="badge">SYNERGIA 2025</span>
+  </div>
+  <h1>PrismWorks Technologies: DEI Financial Model</h1>
+  <p>Interactive cost-of-inaction vs. ROI-of-action calculator (All figures in INR Crore)</p>
+  <div class="rainbow-bar"></div>
+</div>
+
+<div class="main">
+
+  <!-- Controls -->
+  <p class="section-title">Adjust Assumptions</p>
+  <div class="controls-grid">
+    <div class="control-card">
+      <div class="control-label">Attrition Rate <span id="attr-val">24%</span></div>
+      <input type="range" id="attr-slider" min="14" max="35" value="24" step="1" oninput="update()">
+      <p class="control-hint">Current: 24% | Industry avg: 15%</p>
+    </div>
+    <div class="control-card">
+      <div class="control-label">Nexara Risk Probability <span id="nexara-val">70%</span></div>
+      <input type="range" id="nexara-slider" min="10" max="100" value="70" step="5" oninput="update()">
+      <p class="control-hint">Probability contract is cut to ₹33M</p>
+    </div>
+    <div class="control-card">
+      <div class="control-label">Post-DEI Attrition Drop <span id="drop-val">3%</span></div>
+      <input type="range" id="drop-slider" min="1" max="8" value="3" step="0.5" oninput="update()">
+      <p class="control-hint">Expected reduction within 12 months</p>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <p class="section-title">Key Financial Indicators</p>
+  <div class="kpi-grid">
+    <div class="kpi-card danger">
+      <p class="kpi-label">Annual Attrition Cost</p>
+      <p class="kpi-value" id="kpi-attr">₹91.8 Cr</p>
+      <p class="kpi-sub">4,500 × attrition% × ₹8.5L</p>
+    </div>
+    <div class="kpi-card warning">
+      <p class="kpi-label">Nexara Risk (Expected)</p>
+      <p class="kpi-value" id="kpi-nexara">₹70 Cr</p>
+      <p class="kpi-sub">₹100 Cr × probability</p>
+    </div>
+    <div class="kpi-card danger">
+      <p class="kpi-label">Total Cost of Inaction</p>
+      <p class="kpi-value" id="kpi-total">₹256 Cr</p>
+      <p class="kpi-sub">6-month horizon, all risks</p>
+    </div>
+    <div class="kpi-card purple">
+      <p class="kpi-label">ROI of ₹2Cr Investment</p>
+      <p class="kpi-value" id="kpi-roi">55x</p>
+      <p class="kpi-sub">Return in 6 months</p>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <p class="chart-title">Cost of Inaction vs. DEI Investment</p>
+      <p class="chart-sub">Waterfall breakdown (all values in ₹ Crore)</p>
+      <div style="position:relative;height:280px;"><canvas id="waterfallChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <p class="chart-title">Budget Allocation</p>
+      <p class="chart-sub">₹2 Crore DEI spend breakdown</p>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;" id="budget-legend"></div>
+      <div style="position:relative;height:220px;"><canvas id="donutChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Attrition Scenarios -->
+  <div class="band-card">
+    <p class="section-title" style="margin-bottom:0">Attrition Scenario Analysis</p>
+    <p style="font-size:12px;color:#9c9a92;margin-top:4px;margin-bottom:0">Annual cost implications across three paths</p>
+    <div class="scenario-grid">
+      <div class="scenario bad">
+        <h3>No DEI Action</h3>
+        <p class="big" id="sc-bad">₹91.8 Cr</p>
+        <p>Attrition holds at 24%+. Nexara cuts contract. Culture deteriorates further. 3-year cumulative: ₹700–900 Cr at risk.</p>
+      </div>
+      <div class="scenario neutral">
+        <h3>Partial Action</h3>
+        <p class="big" id="sc-neutral">₹70.6 Cr</p>
+        <p>Some training, symbolic ERG. Attrition drops 2–3%. Nexara partially satisfied. Short-term stabilization only.</p>
+      </div>
+      <div class="scenario good">
+        <h3>Full DEI Roadmap</h3>
+        <p class="big" id="sc-good">₹53.3 Cr</p>
+        <p>Attrition reaches 17% in Yr 1. Nexara contract secured. ERG active. Employer brand improves. Cumulative savings: ₹60+ Cr.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Breakdown Table -->
+  <div class="breakdown-card">
+    <p class="section-title">Detailed Cost & Savings Breakdown</p>
+    <table>
+      <thead>
+        <tr>
+          <th>Category</th>
+          <th>Driver</th>
+          <th>Amount (₹ Cr)</th>
+          <th>Type</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Attrition Cost (annual)</td><td id="tb-attr-driver">4,500 × 24% × ₹8.5L</td><td class="cost-val" id="tb-attr">91.8</td><td>Cost of Inaction</td></tr>
+        <tr><td>Excess Attrition (vs industry)</td><td>405 excess exits × ₹8.5L</td><td class="cost-val" id="tb-excess">34.4</td><td>Cost of Inaction</td></tr>
+        <tr><td>Nexara Revenue at Risk</td><td id="tb-nex-driver">₹100 Cr × 70% probability</td><td class="cost-val" id="tb-nexara">70.0</td><td>Contract Risk</td></tr>
+        <tr><td>Talent Acquisition Premium</td><td>3 senior exits @ ₹40L total cost</td><td class="cost-val">5.5</td><td>Cost of Inaction</td></tr>
+        <tr><td>Reputational / ESG Risk</td><td>Loss of 2–3 global clients (est.)</td><td class="cost-val">50.0</td><td>Strategic Risk</td></tr>
+        <tr><td>Project Disruption</td><td>₹85Cr projects @ 5% efficiency loss</td><td class="cost-val">4.25</td><td>Operational</td></tr>
+        <tr class="total-row"><td colspan="2">Total Cost of Inaction (6-month)</td><td class="cost-val" id="tb-total">225.6</td><td></td></tr>
+        <tr class="inv-row"><td colspan="2">DEI Investment (Rainbow Policy 2.0)</td><td>2.0</td><td>Investment</td></tr>
+        <tr><td>Attrition Savings (post-DEI, annual)</td><td id="tb-save-driver">3% drop × 4,500 × ₹8.5L</td><td class="save-val" id="tb-save">11.5</td><td>Return</td></tr>
+        <tr><td>Nexara Contract Protected</td><td>₹375 Cr secured vs. ₹100 Cr cut</td><td class="save-val">100.0</td><td>Return</td></tr>
+        <tr><td>Hiring Cost Reduction</td><td>28% lower cost (inclusive employer brand)</td><td class="save-val">4.0</td><td>Return</td></tr>
+        <tr class="roi-row"><td colspan="2">Net ROI (6 months)</td><td class="save-val" id="tb-roi">55x</td><td>₹2Cr → ₹111.5Cr return</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pulse Survey Improvement -->
+  <div class="chart-card" style="margin-bottom:28px;">
+    <p class="chart-title">Inclusion Index: Before vs. After (6-Month Targets)</p>
+    <p class="chart-sub">Pulse Survey dimensions (score out of 100)</p>
+    <div style="position:relative;height:260px;"><canvas id="radarChart"></canvas></div>
+  </div>
+
+</div>
+
+<div class="rainbow-footer"></div>
+<div class="footer">PrismWorks Technologies DEI Financial Model · Team Triumph · Synergia 2026 · IIFT Kakinada · All figures are estimates based on case data and industry benchmarks</div>
+
+<script>
+// ── Data ──
+const budgetData = {
+  labels: ['Grievance system', 'Manager training', 'DEI specialists', 'ERG launch', 'Policy 2.0', 'HRIS module', 'Awareness', 'Audit package'],
+  values: [30, 40, 36, 20, 15, 20, 25, 14],
+  colors: ['#7c3aed','#a855f7','#c084fc','#ddd6fe','#f0abfc','#818cf8','#34d399','#fbbf24']
+};
+
+// Legend for donut
+const legend = document.getElementById('budget-legend');
+budgetData.labels.forEach((l,i)=>{
+  legend.innerHTML += `<span style="display:flex;align-items:center;gap:4px;font-size:10px;color:#6b6b68;">
+    <span style="width:8px;height:8px;border-radius:2px;background:${budgetData.colors[i]};flex-shrink:0;"></span>${l} ₹${budgetData.values[i]}L</span>`;
+});
+
+// ── Charts ──
+// Waterfall
+const wCtx = document.getElementById('waterfallChart').getContext('2d');
+const wLabels = ['Attrition', 'Nexara risk', 'Talent prem.', 'Reputation', 'Project dis.', 'DEI invest.', 'Net savings'];
+const wData = [91.8, 70.0, 5.5, 50.0, 4.25, -2.0, -111.5];
+const wColors = wData.map(v => v > 0 ? '#dc2626' : '#16a34a');
+const waterfallChart = new Chart(wCtx, {
+  type: 'bar',
+  data: {
+    labels: wLabels,
+    datasets: [{
+      data: wData.map(Math.abs),
+      backgroundColor: wColors,
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false },
+      tooltip: { callbacks: { label: (c) => {
+        const sign = wData[c.dataIndex] > 0 ? '+' : '-';
+        return ` ${sign}₹${c.raw.toFixed(1)} Cr`;
+      }}}
+    },
+    scales: {
+      y: { grid: { color: '#f0eed8' }, ticks: { callback: v => '₹'+v+'Cr', font: { size: 10 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Donut
+const dCtx = document.getElementById('donutChart').getContext('2d');
+new Chart(dCtx, {
+  type: 'doughnut',
+  data: { labels: budgetData.labels, datasets: [{ data: budgetData.values, backgroundColor: budgetData.colors, borderWidth: 2, borderColor: '#fff' }] },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '65%',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ₹${c.raw}L (${Math.round(c.raw/200*100)}%)` } } }
+  }
+});
+
+// Radar
+const rCtx = document.getElementById('radarChart').getContext('2d');
+new Chart(rCtx, {
+  type: 'radar',
+  data: {
+    labels: ['Psychological safety', 'LGBTQ+ disclosure', 'Grievance awareness', 'Bystander action', 'Manager inclusion', 'Culture openness'],
+    datasets: [
+      { label: 'Current (Baseline)', data: [33, 11, 6, 22, 22, 30], borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.08)', pointBackgroundColor: '#dc2626', borderWidth: 2 },
+      { label: 'Target (6 months)', data: [55, 25, 60, 45, 60, 55], borderColor: '#7c3aed', backgroundColor: 'rgba(124,58,237,0.1)', pointBackgroundColor: '#7c3aed', borderWidth: 2 },
+      { label: 'Target (Year 3)', data: [85, 65, 85, 75, 85, 80], borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.08)', pointBackgroundColor: '#16a34a', borderWidth: 2 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 11 }, boxWidth: 12, padding: 12 } } },
+    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, font: { size: 10 } }, grid: { color: '#e0ded6' }, pointLabels: { font: { size: 11 } } } }
+  }
+});
+
+// ── Update function ──
+function fmt(n) { return '₹' + n.toFixed(1) + ' Cr'; }
+function fmtx(n) { return Math.round(n) + 'x'; }
+
+function update() {
+  const attr = +document.getElementById('attr-slider').value;
+  const nexProb = +document.getElementById('nexara-slider').value / 100;
+  const drop = +document.getElementById('drop-slider').value;
+  
+  document.getElementById('attr-val').textContent = attr + '%';
+  document.getElementById('nexara-val').textContent = Math.round(nexProb*100) + '%';
+  document.getElementById('drop-val').textContent = drop + '%';
+  
+  const employees = 4500, repCost = 8.5; // lakh
+  const attrCost = employees * (attr/100) * repCost / 100; // crore
+  const nexara = 100 * nexProb;
+  const talent = 5.5, rep = 50, proj = 4.25;
+  const total = attrCost + nexara + talent + rep + proj;
+  const invest = 2;
+  const attrSave = employees * (drop/100) * repCost / 100;
+  const totalReturn = attrSave + 100 + 4;
+  const roi = Math.round(totalReturn / invest);
+  
+  // KPIs
+  document.getElementById('kpi-attr').textContent = fmt(attrCost);
+  document.getElementById('kpi-nexara').textContent = fmt(nexara);
+  document.getElementById('kpi-total').textContent = fmt(total + 50);
+  document.getElementById('kpi-roi').textContent = fmtx(roi);
+  
+  // Table
+  document.getElementById('tb-attr-driver').textContent = `4,500 × ${attr}% × ₹8.5L`;
+  document.getElementById('tb-attr').textContent = attrCost.toFixed(1);
+  document.getElementById('tb-excess').textContent = (employees * Math.max(0,(attr-15)/100) * repCost / 100).toFixed(1);
+  document.getElementById('tb-nex-driver').textContent = `₹100 Cr × ${Math.round(nexProb*100)}% probability`;
+  document.getElementById('tb-nexara').textContent = nexara.toFixed(1);
+  document.getElementById('tb-total').textContent = (attrCost + nexara + talent + proj).toFixed(1);
+  document.getElementById('tb-save-driver').textContent = `${drop}% drop × 4,500 × ₹8.5L`;
+  document.getElementById('tb-save').textContent = attrSave.toFixed(1);
+  document.getElementById('tb-roi').textContent = fmtx(roi);
+  
+  // Scenarios
+  const badAttr = employees * 0.27 * repCost / 100;
+  const neutralAttr = employees * Math.max(0.20,(attr-0.02)) * repCost / 100;
+  const goodAttr = employees * Math.max(0.14, attr/100 - drop/100) * repCost / 100;
+  document.getElementById('sc-bad').textContent = fmt(badAttr);
+  document.getElementById('sc-neutral').textContent = fmt(neutralAttr);
+  document.getElementById('sc-good').textContent = fmt(goodAttr);
+  
+  // Update waterfall chart
+  const newData = [attrCost, nexara, talent, rep, proj, -invest, -(attrSave + 100 + 4)];
+  waterfallChart.data.datasets[0].data = newData.map(Math.abs);
+  waterfallChart.data.datasets[0].backgroundColor = newData.map(v => v > 0 ? '#dc2626' : '#16a34a');
+  waterfallChart.update('none');
+}
+</script>
+</body>
+</html>
